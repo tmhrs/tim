@@ -12,7 +12,7 @@ require ex_path + '/controller/redmine_controller'
 require ex_path + '/controller/zabbix_controller'
 require ex_path + '/lib/save_issue_thread'
 
-CONF_FILE = ex_path + '/../config.yaml'
+CONF_FILE = ex_path + '/../conf/config.yaml'
 
 class RedmineSyncer
 
@@ -20,12 +20,12 @@ class RedmineSyncer
     @repo = ImReport.new
 
     @conf = ImConfig.new(CONF_FILE)
-    $logger = ImLog.logger(@conf.log_stdout?, @conf.log_file?,@conf.log_filepath)
-    $logger.info "logger is ready"
+    $logger = ImLog.logger(@conf.log_stdout?, @conf.log_file?, @conf.log_filepath, @conf.rotate_max_bytes, @conf.rotate_backup_count)
+    #$logger.info "logger is ready"
     @redmine = RedmineController.new(@conf.get("hosts.redmine"))
     @mail_session = MailSession.new(@conf.get("hosts.mail")) if @conf.mail?
     @zabbix = ZabbixController.new(@conf.get('hosts.zabbix')) if @conf.zabbix_api?
-    @thread = SaveIssueThread.new(@conf.thread_num, @conf.thread_timeout)
+    @thread = SaveIssueThread.new(@conf.thread_num, @conf.thread_timeout, @conf.get("hosts.redmine"))
   end
 
   def main
@@ -36,8 +36,9 @@ class RedmineSyncer
       @mail_session.finalize
     elsif @conf.zabbix_api?
       tmail_list = @zabbix.get_recent_alert(@conf.interval).map do |alert|
-        MailSession.convert_faked_tmail(alert["alertid"], 
-                                        alert["subject"],
+        MailSession.convert_faked_tmail(alert["alertid"],
+                                        #alert["subject"],
+                                        alert["subject"].present? ? alert["subject"] : @conf.default_subject,
                                         alert["message"])
       end
     end
@@ -54,17 +55,16 @@ class RedmineSyncer
     tmail_list.each do |t_mail|
       im_alert_id_value = t_mail[MailSession::TMAIL_IM_ALERT_ID].to_s
       $logger.info " * Alert unique id =#{im_alert_id_value}"
-      m_body = MailParser.new(t_mail.body, 
-                              @conf.separator, 
+      m_body = MailParser.new(t_mail.body,
+                              @conf.separator,
                               @conf.cf_mapping,
                               @conf.null_value,
                               @conf.zabbix?)
       if @conf.zabbix?
-        m_body.add_cf(@conf.order, t_mail[MailSession::TMAIL_IM_ORDER]) 
+        m_body.add_cf(@conf.order, t_mail[MailSession::TMAIL_IM_ORDER])
       end
       if(@conf.zabbix? &&
          m_body.recovered_zabbix?(ImConfig::LIST_ZABI_RECOVER, @conf.cf_mapping))
-
         $logger.info " - candidate for updating ticket"
         next if @redmine.have_registered?(im_alert_id_value, @conf.im_recovered_id)
         $logger.info " - check done. have not updated."
@@ -75,16 +75,18 @@ class RedmineSyncer
         next if @redmine.have_registered?(im_alert_id_value, @conf.im_alert_id)
         $logger.info " - check done. have not registered."
         m_body.add_cf(@conf.im_alert_id, im_alert_id_value)
-        
+
         # TODO:delete no recover
         m_body.add_cf(@conf.im_recovered_id, RedmineController::NO_RECOVER)
         # no recover flag is for searching defect issue.(in next method update issue)
         # Because API can't find cf='' in now version(0.9)
-        issue = @redmine.new_ticket(t_mail.subject,
+        issue = @redmine.new_ticket(t_mail.subject ,
                                     t_mail.body,
                                     @conf.im_prj_id,
                                     @conf.tracker_id,
-                                    m_body.cf_id_values)
+                                    m_body.cf_id_values,
+                                    @conf.get("flg.auto_add_watchers"),
+                                    @conf.get("hosts.redmine.database"))
         @thread.enq issue
         $logger.info " >>> set queue for saving"
       end
@@ -93,7 +95,7 @@ class RedmineSyncer
     @thread.wait_for_finishing
     $logger.info "have finished creating ticket"
     if updating_target.length > 0
-      update_ticket(updating_target) 
+      update_ticket(updating_target)
       @thread.wait_for_finishing
       $logger.info "have finished updating ticket"
       @repo.set_count('Ticket - Update',
@@ -144,4 +146,4 @@ class RedmineSyncer
 end
 
 RedmineSyncer.new.main
-
+$logger.info "===== End main method"

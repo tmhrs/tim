@@ -13,23 +13,33 @@ class RedmineController
       self.site = conf["url"]
       self.user = conf["user"]
       self.password = conf["password"]
+      self.format = :xml
     end
   end
 
   # TODO: performance
-  # for improving performance, before running this method, 
+  # for improving performance, before running this method,
   # should prepare all issue(same trigger id)
   # So ,this method dont have to access api.
   def have_registered?(im_alert_id_value, cf_id_alert_or_recovered)
     cf_name_for_param = CONVERT_CF_NAME.call(cf_id_alert_or_recovered)
-    issue = RedmineClient::Issue.find(:first,
-                                      :params => {cf_name_for_param => 
-                                                    im_alert_id_value })
+    #issue = RedmineClient::Issue.find(:first,
+    #                                  :params => {cf_name_for_param =>
+    #                                                im_alert_id_value })
+    #return issue != nil
+    begin
+      issue = RedmineClient::Issue.find(:first,
+                                        :params => {cf_name_for_param => im_alert_id_value,
+                                                    :nometa => 1})
+    rescue ActiveResource::ResourceNotFound
+      issue = nil
+    end
     return issue != nil
   end
-  
+
   def get_defected_ticket(defect_tracker_id, cf_id_value, avoid_issue_id_list, order_id, order_value)
-    params = {:tracker_id => defect_tracker_id.to_i}
+    #params = {:tracker_id => defect_tracker_id.to_i}
+    params = {:tracker_id => defect_tracker_id.to_i, :nometa => 1}
     cf_id_value.each do |id, value|
       params.store(CONVERT_CF_NAME.call(id), value)
     end
@@ -48,13 +58,36 @@ class RedmineController
     end
     return nil
   end
-  
-  def new_ticket(subject, body, project_id, tracker_id, cf_values)
-    return RedmineClient::Issue.new(:subject             => subject,
-                                    :description         => body,
-                                    :project_id          => project_id,
-                                    :tracker_id          => tracker_id,
-                                    :custom_field_values => cf_values)
+
+  def new_ticket(subject, body, project_id, tracker_id, cf_values, flg_add_watchers, database)
+    watchers_id = []
+    if flg_add_watchers
+      begin
+        require "mysql2"
+        db = Mysql2::Client::new(:host => database["host"], :username => database["user"], :password => database["password"], :database => database["db_name"])
+        val = db.escape(project_id)
+        if project_id.is_a?(Integer)
+          db.query("SELECT members.user_id FROM members JOIN projects ON members.project_id = projects.id JOIN users ON members.user_id = users.id
+                     WHERE users.type = 'User' AND projects.id = '#{val}' ORDER BY members.user_id;").each do |member|
+            watchers_id.push(member["user_id"].to_s)
+          end
+        else
+          db.query("SELECT members.user_id FROM members JOIN projects ON members.project_id = projects.id JOIN users ON members.user_id = users.id
+                     WHERE users.type = 'User' AND (projects.identifier = '#{val}' OR projects.id = '#{val}') ORDER BY members.user_id;").each do |member|
+            watchers_id.push(member["user_id"].to_s)
+          end
+        end
+      rescue => e
+        $logger.info("failed:Connect database : #{e.to_s}")
+      end
+    end
+    issue = RedmineClient::Issue.new(:subject             => subject,
+                                     :description         => body,
+                                     :project_id          => project_id,
+                                     :tracker_id          => tracker_id,
+                                     :custom_field_values => cf_values,
+                                     :watcher_user_ids    => watchers_id)
+    return issue
   end
 
   def modify_cf(issue, cf_updated)
@@ -75,7 +108,7 @@ class RedmineController
     issue_cf.each do |cf|
       if cf.id == order_id
         if cf.value.to_i < order_value.to_i
-          $logger.info( "Issue order : #{cf.value.to_s}" + " < " + 
+          $logger.info( "Issue order : #{cf.value.to_s}" + " < " +
                         "Mail order : #{order_value.to_s}")
           return true
         end

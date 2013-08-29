@@ -80,6 +80,12 @@ class ImConfig
   def log_filepath
     return get("log.filepath")
   end
+  def rotate_max_bytes
+    return get("log.rotate_max_bytes")
+  end
+  def rotate_backup_count
+    return get("log.rotate_backup_count")
+  end
   #
   # getter (redmine custom field)
   #
@@ -103,5 +109,8 @@ class ImConfig
   end
   def order
     return get("redmine_mapping.zabbix.cf_id.im_order")
+  end
+  def default_subject
+    return get("redmine_mapping.default_subject")
   end
 end

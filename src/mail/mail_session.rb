@@ -11,12 +11,12 @@ class MailSession
   ESCAPE_HTML = lambda {|str| str.sub(/<\s?HTML.+\/\s?HTML\s?>/m, '')}
 
   attr_accessor :pop
-	
+
   def initialize(conf)
-    self.pop = Net::POP3.new(conf["address"], 
+    self.pop = Net::POP3.new(conf["address"],
                              conf["port"])
 
-    self.pop.start(conf["user"], 
+    self.pop.start(conf["user"],
                    conf["password"])
   end
 
@@ -47,6 +47,7 @@ class MailSession
     end
     return tmail_list
   end
+
   def self.convert_faked_tmail(alert_id, subject, message)
     tmail = TMail::Mail.new
     tmail.subject = subject

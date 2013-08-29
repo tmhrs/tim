@@ -16,15 +16,24 @@ mail:
   separator_character : ":="
 
 log:
-  mode: stdout
-#  mode: file
-  filepath: '/home/batchuser/im/log/im.log'
+  #mode: stdout
+  mode: file
+  filepath: "/var/lib/redmine/log/"
+  rotate_max_bytes: 10485760
+  rotate_backup_count: 5
 
 hosts:
   redmine:
     url : "http://localhost/redmine/"
     user : admin
     password : admin
+    api_key : ""
+
+    database:
+      host : localhost
+      db_name : ""
+      user : ""
+      password : ""
 
   mail:
     address : ""
@@ -37,65 +46,69 @@ hosts:
     user : 
     password : 
 
+flg:
+  ## チケット作成時にプロジェクトメンバー全員をウォッチャーに追加するかを判定するフラグ（true or false）
+  auto_add_watchers : false
+
 redmine_mapping:
   im_project_id: incident-manager
+  ## alert_typeがzabbix_apiの際に、件名が空のアラートを登録する際に利用される（起票不要の場合は設定不要）
+  default_subject:
   cf_id:
-    im_alert_id : "93"
-    im_recovered_alert_id : "94"
+    im_alert_id : "51"
+    im_recovered_alert_id : "52"
   zabbix:
     tracker_id: "1"
     null_value : "*UNKNOWN*"
     cf_id:
-      im_order : "107"
-      date : "17"
-      esc_history : "18"
-      event_ack_history : "19"
-      event_ack_status : "20"
-      event_age : "21"
-      event_date : "22"
-      event_id : "75"
-      running_event_id : "76"
-      event_time : "25"
-      hostname : "26"
-      host_conn : "27"
-      host_dns : "28"
-      ipaddress : "29"
-      item_lastvalue : "30"
-      item_log_age : "31"
-      item_log_date : "32"
-      item_log_eventid : "79"
-      item_log_nseverity : "34"
-      item_log_severity : "35"
-      item_log_source : "36"
-      item_log_time : "37"
-      item_name : "38"
-      item_value : "39"
-      node_id : "77"
-      node_name : "41"
-      profile_contact : "42"
-      profile_devicetype : "43"
-      profile_hardware : "44"
-      profile_location : "45"
-      profile_macaddress : "46"
-      profile_name : "47"
-      profile_notes : "48"
-      profile_os : "49"
-      profile_serialno : "50"
-      profile_software : "51"
-      profile_tag : "52"
-      status : "85"
-      time : "54"
-      trigger_comment : "55"
-      trigger_events_unack : "56"
-      trigger_id : "78"
-      trigger_key : "61"
-      trigger_name : "62"
-      trigger_nseverity : "81"
-      trigger_severity : "86"
-      trigger_status : "83"
-      trigger_url : "66"
-      trigger_value : "82"
-      host_key_func_param : "68"
+      im_order : "62"
+      date : "1"
+      esc_history : "2"
+      event_ack_history : "3"
+      event_ack_status : "4"
+      event_age : "5"
+      event_date : "6"
+      event_id : "39"
+      event_time : "7"
+      hostname : "8"
+      host_conn : "9"
+      host_dns : "10"
+      ipaddress : "11"
+      item_lastvalue : "12"
+      item_log_age : "13"
+      item_log_date : "14"
+      item_log_eventid : "42"
+      item_log_nseverity : "15"
+      item_log_severity : "16"
+      item_log_source : "17"
+      item_log_time : "18"
+      item_name : "19"
+      item_value : "20"
+      node_id : "40"
+      node_name : "21"
+      profile_contact : "22"
+      profile_devicetype : "23"
+      profile_hardware : "24"
+      profile_location : "25"
+      profile_macaddress : "26"
+      profile_name : "27"
+      profile_notes : "28"
+      profile_os : "29"
+      profile_serialno : "30"
+      profile_software : "31"
+      profile_tag : "32"
+      status : "46"
+      time : "33"
+      trigger_comment : "34"
+      trigger_events_unack : "35"
+      trigger_id : "41"
+      trigger_key : "36"
+      trigger_name : "37"
+      trigger_nseverity : "43"
+      trigger_severity : "47"
+      trigger_status : "45"
+      trigger_url : "38"
+      trigger_value : "44"
     cf_value:
       trigger_nseverity:
         "0" : 未分類
@@ -174,21 +187,21 @@ redmine_mapping:
     tracker_id: "4"
     null_value : ""
     cf_id:
-      priority : "97"
-      priority_jp : "97"
-      priority_en : "97"
-      priority_num : "97"
-      generation_date : "103"
-      plugin_id : "87"
-      monitor_id : "99"
-      facility_id : "100"
-      scope : "88"
-      aplication : "89"
-      message_id : "106"
-      message : "104"
-      org_message : "105"
-      ip_address : "101"
-      node : "102"
+      priority : "53"
+      priority_jp : "53"
+      priority_en : "53"
+      priority_num : "53"
+      generation_date : "58"
+      plugin_id : "48"
+      monitor_id : "54"
+      facility_id : "55"
+      scope : "49"
+      aplication : "50"
+      message_id : "61"
+      message : "59"
+      org_message : "60"
+      ip_address : "56"
+      node : "57"
     cf_value:
       priority_num:
         "0" : 危険

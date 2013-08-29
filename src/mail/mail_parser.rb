@@ -13,7 +13,7 @@ class MailParser
     self.raw_body = Hash.new
     parse(utf8_body, separator)
     self.cf_id_values = Hash.new
-    cf_convert(cf_mapping["cf_id"], 
+    cf_convert(cf_mapping["cf_id"],
                cf_mapping["cf_value"],
                cf_mapping["cf_translated"],
                null_value,
@@ -50,7 +50,7 @@ class MailParser
     end
     return cf_conditions
   end
-  
+
   private
 
   def parse(utf8_body, separator)
@@ -72,7 +72,7 @@ class MailParser
       next if null_value != nil && raw_value == null_value
       config_item_name = translation[raw_key] == nil ?
                            raw_key.downcase.gsub(/[\-\.\s]/, '_') :
-                           translation[raw_key] 
+                           translation[raw_key]
       cf_id = conf_id[config_item_name]
       next if cf_id == nil
       if conf_value != nil && conf_value[config_item_name] != nil
@@ -83,7 +83,7 @@ class MailParser
           cf_value = raw_value.to_i
         elsif is_change_type && config_item_name.end_with?('date')
           cf_value = raw_value.gsub('.','-')
-        else 
+        else
           cf_value = raw_value
         end
       end
